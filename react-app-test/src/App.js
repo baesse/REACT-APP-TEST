@@ -2,8 +2,9 @@ import React, { Component } from "react";
 import EventItem from "./components/Events";
 import { GET_EVENT_ITENS } from "./config/Urls";
 import axios from "axios";
-import { MainBox } from "./shared/style";
-
+import { MainBox,Label } from "./shared/style";
+import { ErrorRequest, RequestNull } from "./shared/LabelConst";
+require('./app.css')
 class App extends Component {
   constructor() {
     super();
@@ -18,12 +19,18 @@ class App extends Component {
       .get(GET_EVENT_ITENS)
       .then(response => {
         if (Array.isArray(response.data.events)) {
+          if(response.data.events.length>0){
           let eventsOrdered = this.orderByDate(response.data.events);
-          let events = this.filterAndGroupEvents(eventsOrdered);
+          let events = this.filterAndGroupEvents(eventsOrdered);        
           this.setState({ events });
+          }else{
+            this.setState({message:RequestNull})
+          }
         }
       })
-      .catch(err => {});
+      .catch(err => {
+        this.setState({message:ErrorRequest})
+      });
   }
 
   orderByDate(events) {
@@ -35,66 +42,37 @@ class App extends Component {
     return ordered;
   }
 
-  groupProducts(events, value) {
-    let itenName = events.reduce(
-      (prev, next) =>
-        prev.concat(
-          next.custom_data
-            .filter(
-              t =>
-                t.key == "product_name" &&
-                next.custom_data.find(e => e.value == value)
-            )
-            .sort()
-        ),
-      []
-    );
-    let itenprice = events.reduce(
-      (prev, next) =>
-        prev.concat(
-          next.custom_data
-            .filter(
-              t =>
-                t.key == "product_price" &&
-                next.custom_data.find(e => e.value == value)
-            )
-            .sort()
-        ),
-      []
-    );
-    let products = [];
-    itenName.forEach((e, indice) => {
-      let product = { name: e.value };
-      product.price = parseFloat(itenprice[indice].value).toFixed(2);
-      products.push(product);
-    });
-    return products;
-  }
-
   filterAndGroupEvents(events) {
-    let mainTransation = [];
-    events.forEach((e, j) => {
-      if (e.event === "comprou") {
-        var { value } = e.custom_data.find(t => t.key == "transaction_id");
-        mainTransation.push({
-          totalPurchase: parseFloat(e.revenue).toFixed(2),
-          date: e.timestamp,
-          products: this.groupProducts(events, value, j),
-          store: ({ value } = e.custom_data.find(t => t.key == "store_name"))
-        });
-      }
-    });
-    return mainTransation;
+    let purchases = events.filter(b => b.event === "comprou");
+    let products = events.filter(b => b.event === "comprou-produto"); 
+    let events_filtered = []  
+    purchases.forEach(purchase => {
+      purchase.products = [];
+      let { value } = purchase.custom_data.find(l => l.key === "transaction_id");      
+      let store = purchase.custom_data.find(l => l.key === "store_name");
+      purchase.store = store.value      
+      products.forEach(product => {
+        var produto = {};
+        if (product.custom_data.find(m => m.key === "transaction_id" && m.value === value)) {
+          let name = product.custom_data.find(o => o.key === "product_name");
+          let price = product.custom_data.find(o => o.key === "product_price");         
+          produto.name = name.value;
+          produto.price = parseFloat(price.value).toFixed(2);        
+          purchase.products.push(produto);
+        }
+      });
+      delete purchase.custom_data;
+      events_filtered.push(purchase);
+    });  
+    return events_filtered
   }
 
-  render() {
-   
+  render() {   
     return (
-      <MainBox>
-        {" "}
+      <MainBox>        
         {Array.isArray(this.state.events) ? (
           <EventItem events={this.state.events} />
-        ) : null}
+        ) : <Label>{this.state.message}</Label>}
       </MainBox>
     );
   }

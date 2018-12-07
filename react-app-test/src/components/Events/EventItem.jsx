@@ -15,40 +15,45 @@ import {
   BodyItem,
   DotIcon
 } from "./style";
-moment.locale("pt-BR");
+moment.locale("pt-br");
 const EventItem = ({ events }) => (
   <Fragment>
     {events.map((element, key) => {
       return (
-        <BoxItem>
+        <BoxItem key={key}>
           <DotIcon />
           <TimeLine />
           <BodyItem>
             <ItemRowInfo>
               <DateSpamBaloon>
-                {moment(element.date)
+                {`${moment(element.timestamp)
                   .locale("pt-BR")
                   .format("DD/MM/YYYY")}
-                {moment(element.date).format("HH:mm")}
+                  ${moment(element.timestamp).format("HH:mm")}`}
               </DateSpamBaloon>
-              <ValueSpamBaloon>R$ {element.totalPurchase}</ValueSpamBaloon>
-              <LabelSimple>{element.store.value}</LabelSimple>
+              <ValueSpamBaloon>
+                R${" "}
+                {parseFloat(element.revenue)
+                  .toFixed(2)
+                  .replace(".", ",")}
+              </ValueSpamBaloon>
+              <LabelSimple>{element.store}</LabelSimple>
             </ItemRowInfo>
             <TableItem>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Preço</TableHead>
-              </TableRow>
-              {element.products.map(p => {
-                return (
-                  <tbody>
-                    <TableRow>
+              <tbody >
+                <TableRow>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Preço</TableHead>
+                </TableRow>
+                {element.products.map((p, key) => {
+                  return (
+                    <TableRow key={key}>
                       <TableData>{p.name}</TableData>
-                      <TableData>R$ {p.price}</TableData>
+                      <TableData>R$ {p.price.replace(".", ",")}</TableData>
                     </TableRow>
-                  </tbody>
-                );
-              })}
+                  );
+                })}
+              </tbody>
             </TableItem>
           </BodyItem>
         </BoxItem>
